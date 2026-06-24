@@ -1,10 +1,13 @@
-name: Auto-Detect Build with RCA
+name: Multi-language Build with RCA
 
 on:
   push:
-    branches: [ main, develop ]
+    branches:
+      - main
+      - develop
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build:
@@ -12,7 +15,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Node.js Project
       - name: Detect Node.js
         id: detect_node
         run: |
@@ -34,7 +36,6 @@ jobs:
         if: steps.detect_node.outputs.detected == 'true'
         run: npm test > logs.txt 2>&1 || true
 
-      # Python Project
       - name: Detect Python
         id: detect_python
         run: |
@@ -61,7 +62,6 @@ jobs:
         if: steps.detect_python.outputs.detected == 'true'
         run: pytest -v > logs.txt 2>&1 || true
 
-      # Java/Maven Project
       - name: Detect Maven
         id: detect_maven
         run: |
@@ -80,7 +80,6 @@ jobs:
         if: steps.detect_maven.outputs.detected == 'true'
         run: mvn clean test > logs.txt 2>&1 || true
 
-      # Go Project
       - name: Detect Go
         id: detect_go
         run: |
@@ -98,12 +97,10 @@ jobs:
         if: steps.detect_go.outputs.detected == 'true'
         run: go test ./... > logs.txt 2>&1 || true
 
-      # Fallback: Generic build
-      - name: Check if any build detected
-        id: check_build
+      - name: Fallback if no detected build
+        if: ${{ always() }}
         run: |
           if [ ! -f "logs.txt" ]; then
-            echo "No project type detected. Creating generic logs."
             echo "No recognized build system found (package.json, requirements.txt, pom.xml, go.mod)" > logs.txt
           fi
 
@@ -114,7 +111,6 @@ jobs:
           echo "Build failed at: $(date)" >> logs.txt
           echo "Workflow: ${{ github.workflow }}" >> logs.txt
 
-  # RCA Analysis
   rca-analysis:
     needs: build
     if: failure()
